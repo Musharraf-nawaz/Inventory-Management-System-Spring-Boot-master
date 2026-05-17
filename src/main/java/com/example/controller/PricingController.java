@@ -4,59 +4,54 @@ import com.example.entity.Pricing;
 import com.example.entity.TheLogConverter;
 import com.example.service.PricingLogService;
 import com.example.service.PricingService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
-/**
- * Created by Wishwa Prabodha on 3/27/2018.
- */
-
-/**
- * Because of the Business entity confliction we have to consider that pricing
- * happens on each product wise and not generalized for entities.
- */
+import java.util.List;
 
 @RestController
-@RequestMapping("/categories/{id}/products/{id}/pricings")
+@RequestMapping("/pricings")
 public class PricingController {
 
+    private final PricingService pricingService;
+    private final PricingLogService pricingLogService;
 
-    @Autowired
-    public PricingService pricingService;
-    @Autowired
-    private PricingLogService pricingLogService;
+    public PricingController(PricingService pricingService, PricingLogService pricingLogService) {
+        this.pricingService = pricingService;
+        this.pricingLogService = pricingLogService;
+    }
 
-    @RequestMapping("")
-    public Iterable<Pricing> getAllPricing() {
+    @GetMapping
+    public List<Pricing> getAllPricing() {
         return pricingService.findAll();
     }
 
-
-    @RequestMapping("/{id}")
-    public Optional<Pricing> searchPricing(@PathVariable int id) {
-        return pricingService.find(id);
+    @GetMapping("/{id}")
+    public Pricing getPricing(@PathVariable int id) {
+        return pricingService.findById(id);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "")
-    public void addPricing(@RequestBody Pricing pricing) {
-        pricingService.insert(pricing);
-        pricingLogService.insert(TheLogConverter.pricingLogLogConverter(pricing));
+    @PostMapping
+    public ResponseEntity<Pricing> addPricing(@RequestBody Pricing pricing) {
+        Pricing saved = pricingService.insert(pricing);
+        pricingLogService.insert(TheLogConverter.pricingLogLogConverter(saved));
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @RequestMapping(method = RequestMethod.PUT,value ="/{id}")
-    public void updateCategory(@RequestBody Pricing pricing) {
-        pricingService.updatePricing(pricing);
-        pricingLogService.insert(TheLogConverter.pricingLogLogConverter(pricing));
+    @PutMapping("/{id}")
+    public Pricing updatePricing(@PathVariable int id, @RequestBody Pricing pricing) {
+        pricing.setPricingId(id);
+        Pricing updated = pricingService.updatePricing(pricing);
+        pricingLogService.insert(TheLogConverter.pricingLogLogConverter(updated));
+        return updated;
     }
 
-    @RequestMapping(method = RequestMethod.DELETE,value ="/{id}")
-    public void deletePricing(@RequestBody Pricing pricing) {
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePricing(@PathVariable int id) {
+        Pricing pricing = pricingService.findById(id);
         pricingService.deletePricing(pricing);
         pricingLogService.insert(TheLogConverter.pricingLogLogConverter(pricing));
     }
-
-
 }
-

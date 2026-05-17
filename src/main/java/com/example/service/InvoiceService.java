@@ -1,41 +1,44 @@
 package com.example.service;
 
 import com.example.entity.Invoice;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.InvoiceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.util.Optional;
+import java.util.List;
 
-@Transactional
 @Service
+@Transactional
 public class InvoiceService {
 
-    @Autowired
-    private InvoiceRepository invoiceRepository;
+    private final InvoiceRepository invoiceRepository;
 
-    public void insert(Invoice invoice) {
-        invoiceRepository.save(invoice);
+    public InvoiceService(InvoiceRepository invoiceRepository) {
+        this.invoiceRepository = invoiceRepository;
     }
 
-
-    public Optional<Invoice> findById(int id) {
-        return invoiceRepository.findById(id);
+    public Invoice insert(Invoice invoice) {
+        return invoiceRepository.save(invoice);
     }
 
-    public Iterable<Invoice> findAll() {
-        return invoiceRepository.findAll();
+    @Transactional(readOnly = true)
+    public Invoice findById(int id) {
+        return invoiceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found: " + id));
     }
 
-    public void updateInvoice(Invoice invoice) {
-        invoiceRepository.save(invoice);
+    @Transactional(readOnly = true)
+    public List<Invoice> findAll() {
+        return (List<Invoice>) invoiceRepository.findAll();
+    }
+
+    public Invoice updateInvoice(Invoice invoice) {
+        findById(invoice.getInvoiceId());
+        return invoiceRepository.save(invoice);
     }
 
     public void deleteInvoice(Invoice invoice) {
         invoiceRepository.delete(invoice);
     }
-
-
-
 }

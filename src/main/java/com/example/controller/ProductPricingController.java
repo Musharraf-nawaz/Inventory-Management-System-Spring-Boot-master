@@ -1,43 +1,47 @@
 package com.example.controller;
 
-
 import com.example.entity.ProductPricing;
 import com.example.service.ProductPricingService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
-@RequestMapping("/productpricing")
+@RequestMapping("/product-pricings")
 public class ProductPricingController {
 
-    @Autowired
-    private ProductPricingService productPricingService;
+    private final ProductPricingService productPricingService;
 
-    @RequestMapping("")
-    public Iterable<ProductPricing> getAllProductPricing() {
+    public ProductPricingController(ProductPricingService productPricingService) {
+        this.productPricingService = productPricingService;
+    }
+
+    @GetMapping
+    public List<ProductPricing> getAllProductPricing() {
         return productPricingService.findAll();
     }
 
-    @RequestMapping("/{id}")
-    public Optional<ProductPricing> searchProductPricing(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public ProductPricing getProductPricing(@PathVariable int id) {
         return productPricingService.findById(id);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "")
-    public void addProductPricing(@RequestBody ProductPricing productPricing) {
-        productPricingService.insert(productPricing);
+    @PostMapping
+    public ResponseEntity<ProductPricing> addProductPricing(@RequestBody ProductPricing productPricing) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(productPricingService.insert(productPricing));
     }
 
-    @RequestMapping(method = RequestMethod.PUT,value ="/{id}")
-    public void updateProductPricing(@RequestBody ProductPricing productPricing) {
-        productPricingService.updateProductPricing(productPricing);
+    @PutMapping("/{id}")
+    public ProductPricing updateProductPricing(@PathVariable int id, @RequestBody ProductPricing productPricing) {
+        productPricing.setRefId(id);
+        return productPricingService.updateProductPricing(productPricing);
     }
 
-    @RequestMapping(method = RequestMethod.DELETE,value ="/{id}")
-    public void deleteProductPricing(@RequestBody ProductPricing productPricing) {
-        productPricingService.deleteProductPricing(productPricing);
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProductPricing(@PathVariable int id) {
+        productPricingService.deleteProductPricing(productPricingService.findById(id));
     }
-
 }

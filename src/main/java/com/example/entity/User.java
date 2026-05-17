@@ -1,8 +1,12 @@
 package com.example.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -12,12 +16,13 @@ import java.util.List;
  * 
  */
 @Entity
+@Table(name = "users")
 @NamedQuery(name="User.findAll", query="SELECT u FROM User u")
 public class User implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private int userId;
 
 	@Temporal(TemporalType.TIMESTAMP)
@@ -42,10 +47,15 @@ public class User implements Serializable {
 
 	private String userName;
 
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+	@Column(name = "password_hash")
+	private String passwordHash;
+
 	private BigDecimal version;
 
 	//bi-directional many-to-one association to UserRole
-	@OneToMany(mappedBy="user")
+	@JsonIgnore
+	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<UserRole> userRoles;
 
 	public User() {
@@ -139,6 +149,14 @@ public class User implements Serializable {
 		this.userName = userName;
 	}
 
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
 	public BigDecimal getVersion() {
 		return this.version;
 	}
@@ -156,9 +174,11 @@ public class User implements Serializable {
 	}
 
 	public UserRole addUserRole(UserRole userRole) {
-		getUserRoles().add(userRole);
+		if (userRoles == null) {
+			userRoles = new ArrayList<>();
+		}
+		userRoles.add(userRole);
 		userRole.setUser(this);
-
 		return userRole;
 	}
 

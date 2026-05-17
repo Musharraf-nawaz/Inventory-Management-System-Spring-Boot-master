@@ -4,45 +4,54 @@ import com.example.entity.Stock;
 import com.example.entity.TheLogConverter;
 import com.example.service.StockLogService;
 import com.example.service.StockService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/stocks")
 public class StockController {
-    @Autowired
-    private StockService stockService;
-    @Autowired
-    private StockLogService stockLogService;
 
-    @RequestMapping("")
-    public Iterable<Stock> getAllStock() {
+    private final StockService stockService;
+    private final StockLogService stockLogService;
+
+    public StockController(StockService stockService, StockLogService stockLogService) {
+        this.stockService = stockService;
+        this.stockLogService = stockLogService;
+    }
+
+    @GetMapping
+    public List<Stock> getAllStock() {
         return stockService.findAll();
     }
 
-    @RequestMapping("/{id}")
-    public Optional<Stock> searchStock(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public Stock getStock(@PathVariable int id) {
         return stockService.findById(id);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "")
-    public void addStock(@RequestBody Stock stock) {
-        stockService.insert(stock);
-        stockLogService.insert(TheLogConverter.stockLogConverter(stock));
+    @PostMapping
+    public ResponseEntity<Stock> addStock(@RequestBody Stock stock) {
+        Stock saved = stockService.insert(stock);
+        stockLogService.insert(TheLogConverter.stockLogConverter(saved));
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @RequestMapping(method = RequestMethod.PUT,value ="/{id}")
-    public void updateStock(@RequestBody Stock stock) {
-        stockService.updateStock(stock);
-        stockLogService.insert(TheLogConverter.stockLogConverter(stock));
+    @PutMapping("/{id}")
+    public Stock updateStock(@PathVariable int id, @RequestBody Stock stock) {
+        stock.setRefId(id);
+        Stock updated = stockService.updateStock(stock);
+        stockLogService.insert(TheLogConverter.stockLogConverter(updated));
+        return updated;
     }
 
-    @RequestMapping(method = RequestMethod.DELETE,value ="/{id}")
-    public void deleteStock(@RequestBody Stock stock) {
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteStock(@PathVariable int id) {
+        Stock stock = stockService.findById(id);
         stockService.deleteStock(stock);
         stockLogService.insert(TheLogConverter.stockLogConverter(stock));
     }
-
 }

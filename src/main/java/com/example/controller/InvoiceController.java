@@ -1,43 +1,47 @@
 package com.example.controller;
 
-
 import com.example.entity.Invoice;
 import com.example.service.InvoiceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/invoices")
 public class InvoiceController {
 
-    @Autowired
-    private InvoiceService invoiceService;
+    private final InvoiceService invoiceService;
 
-    @RequestMapping("")
-    public Iterable<Invoice> getAllInvoice() {
+    public InvoiceController(InvoiceService invoiceService) {
+        this.invoiceService = invoiceService;
+    }
+
+    @GetMapping
+    public List<Invoice> getAllInvoice() {
         return invoiceService.findAll();
     }
 
-    @RequestMapping("/{id}")
-    public Optional<Invoice> searchInvoice(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public Invoice getInvoice(@PathVariable int id) {
         return invoiceService.findById(id);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "")
-    public void addInvoice(@RequestBody Invoice invoice) {
-        invoiceService.insert(invoice);
+    @PostMapping
+    public ResponseEntity<Invoice> addInvoice(@RequestBody Invoice invoice) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.insert(invoice));
     }
 
-    @RequestMapping(method = RequestMethod.PUT,value ="/{id}")
-    public void updateInvoice(@RequestBody Invoice invoice) {
-        invoiceService.updateInvoice(invoice);
+    @PutMapping("/{id}")
+    public Invoice updateInvoice(@PathVariable int id, @RequestBody Invoice invoice) {
+        invoice.setInvoiceId(id);
+        return invoiceService.updateInvoice(invoice);
     }
 
-    @RequestMapping(method = RequestMethod.DELETE,value ="/{id}")
-    public void deleteInvoice(@RequestBody Invoice invoice) {
-        invoiceService.deleteInvoice(invoice);
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteInvoice(@PathVariable int id) {
+        invoiceService.deleteInvoice(invoiceService.findById(id));
     }
-
 }

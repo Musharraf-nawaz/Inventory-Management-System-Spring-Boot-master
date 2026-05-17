@@ -1,55 +1,57 @@
 package com.example.controller;
 
-import com.example.entity.TheLogConverter;
 import com.example.entity.Category;
+import com.example.entity.TheLogConverter;
 import com.example.service.CategoryLogService;
 import com.example.service.CategoryService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
-/**
- * Created by Wishwa Prabodha on 3/27/2018.
- */
-
+import java.util.List;
 
 @RestController
 @RequestMapping("/categories")
 public class CategoryController {
 
-    @Autowired
-    public CategoryService categoryService;
-    @Autowired
-    private CategoryLogService categoryLogService;
+    private final CategoryService categoryService;
+    private final CategoryLogService categoryLogService;
 
-    @RequestMapping("")
-    public Iterable<Category> getAllCategory() {
+    public CategoryController(CategoryService categoryService, CategoryLogService categoryLogService) {
+        this.categoryService = categoryService;
+        this.categoryLogService = categoryLogService;
+    }
+
+    @GetMapping
+    public List<Category> getAllCategory() {
         return categoryService.findAll();
     }
 
-    @RequestMapping("/{id}")
-    public Optional<Category> searchCategory(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public Category getCategory(@PathVariable int id) {
         return categoryService.findById(id);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "")
-    public void addCategory(@RequestBody Category category) {
-        categoryService.insert(category);
-        categoryLogService.insert(TheLogConverter.categoryLogConverter(category));
+    @PostMapping
+    public ResponseEntity<Category> addCategory(@RequestBody Category category) {
+        Category saved = categoryService.insert(category);
+        categoryLogService.insert(TheLogConverter.categoryLogConverter(saved));
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @RequestMapping(method = RequestMethod.PUT,value ="/{id}")
-    public void updateCategory(@RequestBody Category category) {
-        categoryService.updateCategory(category);
-        categoryLogService.insert(TheLogConverter.categoryLogConverter(category));
+    @PutMapping("/{id}")
+    public Category updateCategory(@PathVariable int id, @RequestBody Category category) {
+        category.setCategoryId(id);
+        Category updated = categoryService.updateCategory(category);
+        categoryLogService.insert(TheLogConverter.categoryLogConverter(updated));
+        return updated;
     }
 
-    @RequestMapping(method = RequestMethod.DELETE,value ="/{id}")
-    public void deleteCategory(@RequestBody Category category) {
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCategory(@PathVariable int id) {
+        Category category = categoryService.findById(id);
         categoryService.deleteCategory(category);
         categoryLogService.insert(TheLogConverter.categoryLogConverter(category));
     }
-
-
 }

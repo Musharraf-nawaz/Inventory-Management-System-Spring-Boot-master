@@ -1,41 +1,44 @@
 package com.example.service;
 
 import com.example.entity.ProductPricing;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.ProductPricingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.util.Optional;
+import java.util.List;
 
-@Transactional
 @Service
+@Transactional
 public class ProductPricingService {
 
-@Autowired
-    private ProductPricingRepository productPricingRepository;
+    private final ProductPricingRepository productPricingRepository;
 
-
-    public void insert( ProductPricing productPricing) {
-        productPricingRepository.save(productPricing);
+    public ProductPricingService(ProductPricingRepository productPricingRepository) {
+        this.productPricingRepository = productPricingRepository;
     }
 
-
-    public Optional< ProductPricing> findById(int id) {
-        return productPricingRepository.findById(id);
+    public ProductPricing insert(ProductPricing productPricing) {
+        return productPricingRepository.save(productPricing);
     }
 
-    public Iterable<ProductPricing> findAll() {
-        return productPricingRepository.findAll();
+    @Transactional(readOnly = true)
+    public ProductPricing findById(int id) {
+        return productPricingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product pricing not found: " + id));
     }
 
-    public void updateProductPricing( ProductPricing productPricing) {
-        productPricingRepository.save(productPricing);
+    @Transactional(readOnly = true)
+    public List<ProductPricing> findAll() {
+        return (List<ProductPricing>) productPricingRepository.findAll();
     }
 
-    public void deleteProductPricing( ProductPricing productPricing) {
+    public ProductPricing updateProductPricing(ProductPricing productPricing) {
+        findById(productPricing.getRefId());
+        return productPricingRepository.save(productPricing);
+    }
+
+    public void deleteProductPricing(ProductPricing productPricing) {
         productPricingRepository.delete(productPricing);
     }
-
-
 }

@@ -1,52 +1,57 @@
 package com.example.controller;
 
-
 import com.example.entity.Supplier;
 import com.example.entity.TheLogConverter;
 import com.example.service.SupplierLogService;
 import com.example.service.SupplierService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/suppliers")
 public class SupplierController {
 
-    @Autowired
-    private SupplierService supplierService;
-    @Autowired
-    private SupplierLogService supplierLogService;
+    private final SupplierService supplierService;
+    private final SupplierLogService supplierLogService;
 
-    @RequestMapping("")
-    public Iterable<Supplier> getAllSupplier() {
+    public SupplierController(SupplierService supplierService, SupplierLogService supplierLogService) {
+        this.supplierService = supplierService;
+        this.supplierLogService = supplierLogService;
+    }
+
+    @GetMapping
+    public List<Supplier> getAllSupplier() {
         return supplierService.findAll();
     }
 
-    @RequestMapping("/{id}")
-    public Optional<Supplier> searchSupplier(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public Supplier getSupplier(@PathVariable int id) {
         return supplierService.findById(id);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "")
-    public void addCategory(@RequestBody Supplier supplier) {
-        supplierService.insert(supplier);
-        supplierLogService.insert(TheLogConverter.supplierLogConverter(supplier));
+    @PostMapping
+    public ResponseEntity<Supplier> addSupplier(@RequestBody Supplier supplier) {
+        Supplier saved = supplierService.insert(supplier);
+        supplierLogService.insert(TheLogConverter.supplierLogConverter(saved));
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @RequestMapping(method = RequestMethod.PUT,value ="/{id}")
-    public void updateCategory(@RequestBody Supplier supplier) {
-        supplierService.updateSupplier(supplier);
-        supplierLogService.insert(TheLogConverter.supplierLogConverter(supplier));
+    @PutMapping("/{id}")
+    public Supplier updateSupplier(@PathVariable int id, @RequestBody Supplier supplier) {
+        supplier.setSupplierId(id);
+        Supplier updated = supplierService.updateSupplier(supplier);
+        supplierLogService.insert(TheLogConverter.supplierLogConverter(updated));
+        return updated;
     }
 
-    @RequestMapping(method = RequestMethod.DELETE,value ="/{id}")
-    public void deleteCategory(@RequestBody Supplier supplier) {
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSupplier(@PathVariable int id) {
+        Supplier supplier = supplierService.findById(id);
         supplierService.deleteSupplier(supplier);
         supplierLogService.insert(TheLogConverter.supplierLogConverter(supplier));
     }
-
-
-
 }

@@ -1,47 +1,64 @@
 package com.example.service;
 
 import com.example.entity.Category;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.CategoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.util.AuditHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.util.Optional;
+import java.util.Date;
+import java.util.List;
 
-/**
- * Created by Wishwa Prabodha on 3/27/2018.
- */
-
-
-@Transactional
 @Service
+@Transactional
 public class CategoryService {
 
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
 
-    public void insert(Category category) {
-        categoryRepository.save(category);
+    public CategoryService(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
     }
 
-
-    public Optional<Category> findById(int id) {
-        return categoryRepository.findById(id);
+    public Category insert(Category category) {
+        applyCreateAudit(category);
+        return categoryRepository.save(category);
     }
 
-    public Iterable<Category> findAll() {
-        return categoryRepository.findAll();
+    @Transactional(readOnly = true)
+    public Category findById(int id) {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
     }
 
-    public void updateCategory(Category category) {
+    @Transactional(readOnly = true)
+    public List<Category> findAll() {
+        return (List<Category>) categoryRepository.findAll();
+    }
 
-        categoryRepository.save(category);
+    public Category updateCategory(Category category) {
+        findById(category.getCategoryId());
+        applyUpdateAudit(category);
+        return categoryRepository.save(category);
     }
 
     public void deleteCategory(Category category) {
-
         categoryRepository.delete(category);
     }
 
+    private void applyCreateAudit(Category category) {
+        Date now = AuditHelper.now();
+        if (category.getCreatedDateTime() == null) {
+            category.setCreatedDateTime(now);
+        }
+        category.setCreatedUser(AuditHelper.actor(category.getCreatedUser()));
+        if (category.getVersion() == null) {
+            category.setVersion(AuditHelper.initialVersion());
+        }
+    }
 
+    private void applyUpdateAudit(Category category) {
+        category.setLastModifiedDateTime(AuditHelper.now());
+        category.setLastModifiedUser(AuditHelper.actor(category.getLastModifiedUser()));
+    }
 }

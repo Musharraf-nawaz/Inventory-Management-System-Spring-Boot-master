@@ -1,41 +1,44 @@
 package com.example.service;
 
 import com.example.entity.ProductInvoice;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.ProductInvoiceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.util.Optional;
+import java.util.List;
 
-@Transactional
 @Service
+@Transactional
 public class ProductInvoiceService {
 
-@Autowired
-    private ProductInvoiceRepository productInvoiceRepository;
+    private final ProductInvoiceRepository productInvoiceRepository;
 
-    public void insert(ProductInvoice productInvoice) {
-        productInvoiceRepository.save(productInvoice);
+    public ProductInvoiceService(ProductInvoiceRepository productInvoiceRepository) {
+        this.productInvoiceRepository = productInvoiceRepository;
     }
 
-
-    public Optional<ProductInvoice> findById(int id) {
-        return productInvoiceRepository.findById(id);
+    public ProductInvoice insert(ProductInvoice productInvoice) {
+        return productInvoiceRepository.save(productInvoice);
     }
 
-    public Iterable<ProductInvoice> findAll() {
-        return productInvoiceRepository.findAll();
+    @Transactional(readOnly = true)
+    public ProductInvoice findById(int id) {
+        return productInvoiceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product invoice not found: " + id));
     }
 
-    public void updateProductInvoice(ProductInvoice productInvoice) {
-        productInvoiceRepository.save(productInvoice);
+    @Transactional(readOnly = true)
+    public List<ProductInvoice> findAll() {
+        return (List<ProductInvoice>) productInvoiceRepository.findAll();
+    }
+
+    public ProductInvoice updateProductInvoice(ProductInvoice productInvoice) {
+        findById(productInvoice.getRefId());
+        return productInvoiceRepository.save(productInvoice);
     }
 
     public void deleteProductInvoice(ProductInvoice productInvoice) {
         productInvoiceRepository.delete(productInvoice);
     }
-
-
-
 }

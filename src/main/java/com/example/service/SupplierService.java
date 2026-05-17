@@ -1,40 +1,56 @@
 package com.example.service;
 
 import com.example.entity.Supplier;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.SupplierRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.util.AuditHelper;
+import com.example.util.EntityAudit;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.util.Optional;
+import java.util.Date;
+import java.util.List;
 
-@Transactional
 @Service
+@Transactional
 public class SupplierService {
 
-    @Autowired
-    private SupplierRepository supplierRepository;
+    private final SupplierRepository supplierRepository;
 
-    public void insert(Supplier supplier) {
-        supplierRepository.save(supplier);
+    public SupplierService(SupplierRepository supplierRepository) {
+        this.supplierRepository = supplierRepository;
     }
 
-
-    public Optional<Supplier> findById(int id) {
-        return supplierRepository.findById(id);
+    public Supplier insert(Supplier supplier) {
+        Date now = AuditHelper.now();
+        if (supplier.getCreatedDateTime() == null) {
+            supplier.setCreatedDateTime(now);
+        }
+        EntityAudit.stampCreate(supplier::setCreatedUser, supplier::setCreatedDateTime, supplier::setVersion,
+                supplier.getCreatedUser(), now);
+        return supplierRepository.save(supplier);
     }
 
-    public Iterable<Supplier> findAll() {
-        return supplierRepository.findAll();
+    @Transactional(readOnly = true)
+    public Supplier findById(int id) {
+        return supplierRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found: " + id));
     }
 
-    public void updateSupplier(Supplier supplier) {
+    @Transactional(readOnly = true)
+    public List<Supplier> findAll() {
+        return (List<Supplier>) supplierRepository.findAll();
+    }
 
-        supplierRepository.save(supplier);
+    public Supplier updateSupplier(Supplier supplier) {
+        findById(supplier.getSupplierId());
+        Date now = AuditHelper.now();
+        EntityAudit.stampUpdate(supplier::setLastModifiedUser, supplier::setLastModifiedDateTime,
+                supplier.getLastModifiedUser(), now);
+        return supplierRepository.save(supplier);
     }
 
     public void deleteSupplier(Supplier supplier) {
-
         supplierRepository.delete(supplier);
     }
 }

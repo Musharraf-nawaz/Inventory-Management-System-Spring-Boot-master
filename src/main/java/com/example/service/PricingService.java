@@ -1,51 +1,56 @@
 package com.example.service;
 
 import com.example.entity.Pricing;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.PricingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.util.AuditHelper;
+import com.example.util.EntityAudit;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.util.Optional;
+import java.util.Date;
+import java.util.List;
 
-/**
- * Created by Wishwa Prabodha on 3/27/2018.
- */
-
-@Transactional
 @Service
+@Transactional
 public class PricingService {
 
-    @Autowired
-    private PricingRepository pricingRepository;
+    private final PricingRepository pricingRepository;
 
-
-    @RequestMapping("")
-    public Iterable<Pricing> getAllStock() {
-        return pricingRepository.findAll();
+    public PricingService(PricingRepository pricingRepository) {
+        this.pricingRepository = pricingRepository;
     }
 
-    public void insert(Pricing pricing) {
-        pricingRepository.save(pricing);
+    public Pricing insert(Pricing pricing) {
+        Date now = AuditHelper.now();
+        if (pricing.getCreatedDateTime() == null) {
+            pricing.setCreatedDateTime(now);
+        }
+        EntityAudit.stampCreate(pricing::setCreatedUser, pricing::setCreatedDateTime, pricing::setVersion,
+                pricing.getCreatedUser(), now);
+        return pricingRepository.save(pricing);
     }
 
-
-    public Iterable<Pricing> findAll() {
-        return pricingRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<Pricing> findAll() {
+        return (List<Pricing>) pricingRepository.findAll();
     }
 
-    public Optional<Pricing> find(int id) {
-        return pricingRepository.findById(id);
+    @Transactional(readOnly = true)
+    public Pricing findById(int id) {
+        return pricingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pricing not found: " + id));
     }
 
-    public void updatePricing(Pricing pricing) {
-        pricingRepository.save(pricing);
+    public Pricing updatePricing(Pricing pricing) {
+        findById(pricing.getPricingId());
+        Date now = AuditHelper.now();
+        EntityAudit.stampUpdate(pricing::setLastModifiedUser, pricing::setLastModifiedDateTime,
+                pricing.getLastModifiedUser(), now);
+        return pricingRepository.save(pricing);
     }
 
     public void deletePricing(Pricing pricing) {
         pricingRepository.delete(pricing);
     }
-
-
 }

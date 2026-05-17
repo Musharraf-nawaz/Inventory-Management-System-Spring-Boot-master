@@ -1,44 +1,56 @@
 package com.example.service;
 
 import com.example.entity.Product;
+import com.example.exception.ResourceNotFoundException;
 import com.example.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.util.AuditHelper;
+import com.example.util.EntityAudit;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.util.Optional;
+import java.util.Date;
+import java.util.List;
 
-/**
- * Created by Wishwa Prabodha on 3/23/2018.
- */
-
-
-@Transactional
 @Service
+@Transactional
 public class ProductService {
 
-    @Autowired
-    public ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
-    public void insert(Product product) {
-        productRepository.save(product);
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
     }
 
-    public Optional<Product> find(int id) {
-        return productRepository.findById(id);
+    public Product insert(Product product) {
+        Date now = AuditHelper.now();
+        if (product.getCreatedDateTime() == null) {
+            product.setCreatedDateTime(now);
+        }
+        EntityAudit.stampCreate(product::setCreatedUser, product::setCreatedDateTime, product::setVersion,
+                product.getCreatedUser(), now);
+        return productRepository.save(product);
     }
 
-    public Iterable<Product> findAll() {
-        return productRepository.findAll();
+    @Transactional(readOnly = true)
+    public Product findById(int id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
     }
 
-    public void updateProduct(Product product) {
-        productRepository.save(product);
+    @Transactional(readOnly = true)
+    public List<Product> findAll() {
+        return (List<Product>) productRepository.findAll();
+    }
+
+    public Product updateProduct(Product product) {
+        findById(product.getProductId());
+        Date now = AuditHelper.now();
+        EntityAudit.stampUpdate(product::setLastModifiedUser, product::setLastModifiedDateTime,
+                product.getLastModifiedUser(), now);
+        return productRepository.save(product);
     }
 
     public void deleteProduct(Product product) {
         productRepository.delete(product);
     }
-
-
 }

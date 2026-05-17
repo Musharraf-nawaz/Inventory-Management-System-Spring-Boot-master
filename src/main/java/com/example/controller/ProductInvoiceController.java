@@ -2,40 +2,46 @@ package com.example.controller;
 
 import com.example.entity.ProductInvoice;
 import com.example.service.ProductInvoiceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import java.util.List;
 
 @RestController
-@RequestMapping("/productinvoice")
+@RequestMapping("/product-invoices")
 public class ProductInvoiceController {
-    @Autowired
-    private ProductInvoiceService productInvoiceService;
 
-    @RequestMapping("")
-    public Iterable<ProductInvoice> getAllProductInvoice() {
+    private final ProductInvoiceService productInvoiceService;
+
+    public ProductInvoiceController(ProductInvoiceService productInvoiceService) {
+        this.productInvoiceService = productInvoiceService;
+    }
+
+    @GetMapping
+    public List<ProductInvoice> getAllProductInvoice() {
         return productInvoiceService.findAll();
     }
 
-    @RequestMapping("/{id}")
-    public Optional<ProductInvoice> searchProductInvoice(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public ProductInvoice getProductInvoice(@PathVariable int id) {
         return productInvoiceService.findById(id);
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "")
-    public void addProductInvoice(@RequestBody ProductInvoice productInvoice) {
-        productInvoiceService.insert(productInvoice);
+    @PostMapping
+    public ResponseEntity<ProductInvoice> addProductInvoice(@RequestBody ProductInvoice productInvoice) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(productInvoiceService.insert(productInvoice));
     }
 
-    @RequestMapping(method = RequestMethod.PUT,value ="/{id}")
-    public void updateProductInvoice(@RequestBody ProductInvoice productInvoice) {
-        productInvoiceService.updateProductInvoice(productInvoice);
+    @PutMapping("/{id}")
+    public ProductInvoice updateProductInvoice(@PathVariable int id, @RequestBody ProductInvoice productInvoice) {
+        productInvoice.setRefId(id);
+        return productInvoiceService.updateProductInvoice(productInvoice);
     }
 
-    @RequestMapping(method = RequestMethod.DELETE,value ="/{id}")
-    public void deleteProductInvoice(@RequestBody ProductInvoice productInvoice) {
-        productInvoiceService.deleteProductInvoice(productInvoice);
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProductInvoice(@PathVariable int id) {
+        productInvoiceService.deleteProductInvoice(productInvoiceService.findById(id));
     }
-
 }
